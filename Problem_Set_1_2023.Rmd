@@ -1,0 +1,282 @@
+---
+title: "R Practice"
+output: 
+  html_document:
+    toc: true # table of content true
+    toc_depth: 3  # upto three depths of headings (specified by #, ## and ###)
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    df_print: paged
+  # 
+  # number_sections: true  ## if you want number sections at each table header
+  # theme: united  # many options for theme, this one is my favorite.
+  # highlight: tango  # specifies the syntax highlighting style
+---
+
+```{r setup, include=F}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. R Practice
+
+### Problem Set to practice R<br><br>
+
+#### This problem set is mostly for you to practice working in R. We know that some of you are new to this tool and that this first week might have felt a little overwhelming as there was a lot of new vocabulary and concepts. <br>
+
+#### We want to reasure you that our goal in this course is NOT to build an advance expertise in R but to use R as a tool to use the statistical topics and concepts that we will cover in the course, and for that to work we do need to cover the basic R usage that will make this goal succesful.<br>
+
+#### With this in mind, we created this short guide to start working with data and the main functions and capabilities in R. We will start from getting a dataset from the web that some of you might be familiar with and that is used a lot in genetics and bioinformatics. The idea will be to use the main concepts we reviewd during the week.<br> let's begin!!<br><br>
+
+## Dataset
+
+#### For this exercise we will use the The International Genome Sample Resource dataset or more commonly known as the One Thousand Genome Project. We are going to download the main dataset that contains information about the populations and other variables added to each sample.<br>
+
+#### To download the data go to https://www.internationalgenome.org/data-portal/sample and click on the Download the list button, this will open a site that contains all the data. Depending on which browser you have you can normaly go to File and Save As, in the Format button click Page Source and select the location to save. <br>
+
+#### Once you have the file saved on your computer then we can start working in R, first remember to set up your directory just replace the type/here/the/address/ with your exact location and click run<br>
+
+```{r class.source="bg-danger", class.output="bg-warning"}
+#setwd("type/here/the/address/")
+setwd("/Users/carterhardy/spring 2025 UU/Prob-and-Stats-BMI6106")
+
+```
+
+#### just to make sure that the file is there let's see which files are in this directory<br>
+
+```{r class.source="bg-danger", class.output="bg-warning"}
+setwd("/Users/carterhardy/spring 2025 UU/Prob-and-Stats-BMI6106")
+list.files()
+```
+
+#### Is igsr_samples.tsv in your output? Great! <br>
+
+#### Let's import that dataset to R
+#### And check the first few lines with the function head()<br>
+```{r import}
+KG_Samples = read.table("igsr_samples.tsv",sep = "\t", header = T)
+head(KG_Samples)
+```
+
+
+#### there is a column in this dataframe that is comma separated, we can split this column<br>
+#### into 5 different sections named from A to E using the separate function from the tidyverse package<br>
+
+```{r separate}
+library(tidyverse)
+head(KG_Samples$Data.collections,2)
+KG_Samples = KG_Samples %>%
+  separate(Data.collections,c("A","B","C","D","E"),",")
+```
+
+
+#### how many samples are there in total<br>
+
+```{r nrow}
+nrow(KG_Samples) ##2513
+```
+
+
+#### how is gender split, to see this we can use the table function, alternately we can use the group_by function from the tidyverse package<br>
+```{r table}
+table(KG_Samples$Sex)
+
+KG_Samples %>% group_by(Sex) %>% tally()
+```
+
+
+#### We can also make our queries a little more complex, for example how many males are in the GBR population?<br>
+
+```{r table_complex}
+table(KG_Samples$Population.code,KG_Samples$Sex)
+```
+
+#### Or with the tidyverse package <br>
+```{r table_complex_tidyverse}
+KG_Samples %>% filter(Population.code =="GBR") %>% group_by(Sex) %>% tally()
+
+```
+
+#### Lets randomly add ages to each sample, there is an important function sample() that randmly draws numbers from the uniform distribution, the first argument is the range to sample (in this case numbers from 0 to 100), the second is how many times we want to sample, there is a third argument which is replace which by default is false, in our example we want to change that to TRUE so we can have duplicated ages<br>
+
+```{r Random}
+sample(c(0:100),1)
+```
+
+#### Now we can populate the new Ages column in our dataframe, to do this we create a new column Age, and do the sample command, see how the size argument is going to be as long as the number of rows that we have in the dataset, this way we can fill the Age column with different Ages.<br>
+
+
+```{r Random_Ages}
+KG_Samples$Age = sample(c(0:100),size = nrow(KG_Samples), replace = TRUE)
+head(KG_Samples,2)
+```
+
+#### Hmmmm we want to have the Age column right next to Sex, so let's ret's reorganize this table by changing the order of the columns using their indeces or the column names and at the same time let's get rid of those columns that have duplicated data (columns A,B,C,D,E, which are 9 to 13)<br>
+
+```{r Reorder}
+KG_Samples = KG_Samples[,c(1,2,14,3:8)]
+head(KG_Samples,2)
+```
+
+#### Let's remove the Biosample.ID columnm we can use the colnames() function to check the column names.
+#### To remove the column we can use the sample form as in the code before with the indices, or we can use the subset() function and select the column we want to remove<br>
+
+```{r Remove}
+colnames(KG_Samples)
+
+KG_Samples = subset(KG_Samples, select=-c(Biosample.ID))
+
+colnames(KG_Samples)
+```
+
+
+#### We can create summary statistics using the summarize() function. Let's calculate mean and standard deviation for the column Age<br>
+```{r Summary_Age}
+summary_Age <- KG_Samples %>% 
+  summarize(mean = mean(Age), std_dev = sd(Age))
+summary_Age
+```
+
+#### Cool!<br>
+
+#### How about a more complex summary how about summary of Age by Sex, we need to be carefull with the missing data or Age is not going to work the argument na.rm=TRUE will exclude the missing data (NAs) from the calculations, see that I am creating a new Dataframe called summary_sex_Age with the summary data<br>
+
+```{r Age_Sex}
+summary_sex_Age <- KG_Samples %>% 
+  group_by(Sex) %>% 
+  summarize(mean = mean(Age, na.rm = TRUE), 
+            std_dev = sd(Age, na.rm = TRUE))
+summary_sex_Age
+```
+
+
+#### I also want to count how many individuals are on each population (function summarize()) and sort the values from the largest to smallest (function arrange() with the argument desc() to sort from largest to smallest)<br>
+
+```{r Sort}
+KG_Samples %>% 
+  group_by(Population.name) %>% 
+  summarize(count = n()) %>% 
+  arrange(desc(count))
+```
+
+<br>
+#### Another way to create a new variable is with the mutate() function from the tidyverse package in this case we are going to convert the Age in years to Age in months 
+<br>
+```{r Age_Months}
+KG_Samples <- KG_Samples %>% 
+  mutate(Age_Months = Age * 52)
+```
+<br>
+#### ggplot2 is a great package included in the tidyverse group, let's use it to create a histogram of the Age distribution
+<br>
+```{r Plot_hist}
+ggplot(data = KG_Samples, mapping = aes(x = Age)) +
+  geom_histogram(color = "white", bins = 25)+
+  theme_classic()
+```
+
+<br>
+#### The last command for this guide is an important function if_else() that allows us to create variables baased on conditions<br> In this case let's create a new variable called Age_EUR that will give a 1 if and individual is less than 50 years old <strong>AND</strong> of European Ancestry and a 0 if it is not
+
+```{r if_else}
+KG_Samples = KG_Samples %>% 
+  mutate(Age_EUR = if_else(condition = Age <50 & Superpopulation.code=="EUR",true = 1,false = 0))
+head(KG_Samples,2)
+```
+
+<hr class="rounded">
+
+# 2. Problem Set R
+
+### Now is your turn to practice!!
+
+#### We are using a new Dataset, This is a frequently used dataset for multiple applications in statistics and machine learning. This dataset is deposited in a website that is pretty useful in bioinformatics to look for tutorials, datasets and advice Kaggle (https://www.kaggle.com)
+
+#### Go to https://www.kaggle.com/saurabh00007/diabetescsv and download the csv file
+
+#### This dataset consists on clinical variables for 768 patients to evaluate a few variables to predict whether a patient has diabetes.
+
+#### Please write the R code necessary to run the next items:
+
+#### 1. Load the dataset and show the first 5 lines<br>
+```{r}
+setwd("/Users/carterhardy/spring 2025 UU/Prob-and-Stats-BMI6106")
+dia_data <- read.csv("diabetes.csv")
+head(dia_data, n = 5)
+```
+
+
+#### 2. How many patients have diabetes?<br>
+##### I am assuming outcome = 1 means the patient has diabetes
+```{r}
+sum(dia_data$Outcome == 1)
+
+```
+##### Assuming outcome = 1 means the patient has diabetes there are 268 patients with diabetes
+
+
+#### 3. How many patients have diabetes that are older than 45?<br>
+```{r}
+diabetes_obs <- subset(dia_data, Outcome == 1)
+sum(diabetes_obs$Age > 45)
+```
+##### The number of patients that have diabetes and are older than 45 is 58
+
+#### 4. What is the mean and variance of glucose levels for individuals without diabetes<br>
+```{r}
+no_dia_obs <- subset(dia_data, Outcome == 0)
+summary_no_dia <- no_dia_obs %>% 
+  summarize(mean = mean(Glucose), var = var(Glucose))
+summary_no_dia
+```
+##### The mean and variance of glucose levels for individuals without diabetes is a mean of 109.98 and a var of 683.36 
+
+#### 5. Create a new discrete variable that has 1 if the individual has diabetes and high blood pressure (above 100), 2 if an indivual has diabetes and low blood pressure and 3 if the individual does not have diabetes.<br>
+```{r}
+dia_data = dia_data %>%
+  mutate(HighBpDiabetes = case_when(
+    Outcome == 1 & BloodPressure > 100 ~ 1,
+    Outcome == 1 & BloodPressure <= 100 ~ 2,
+    Outcome == 0  ~ 3
+  ))
+head(dia_data$HighBpDiabetes)
+```
+
+
+#### 6. Construct two plots of the distribution of BMI for individuals with diabetes and without diabetes<br><br>
+```{r}
+#After my first attempt I noticed BMI values of zero. This is first removing them
+diabetes_obs <- diabetes_obs %>%
+  filter(BMI != 0)
+
+no_dia_obs <- no_dia_obs %>%
+  filter(BMI != 0)
+
+hist_diabetes <- ggplot(diabetes_obs, aes(x = BMI)) +
+  geom_histogram(fill = "red", color = "black", bins = 30, alpha = 0.7) +
+  labs(
+    title = "BMI Histogram for Individuals with Diabetes",
+    x = "BMI",
+    y = "Count"
+  ) +
+  theme_minimal()
+
+
+hist_no_diabetes <- ggplot(no_dia_obs, aes(x = BMI)) +
+  geom_histogram(fill = "blue", color = "black", bins = 30, alpha = 0.7) +
+  labs(
+    title = "BMI Histogram for Individuals without Diabetes",
+    x = "BMI",
+    y = "Count"
+  ) +
+  theme_minimal()
+
+
+hist_diabetes
+hist_no_diabetes
+```
+
+
+
+<hr class="rounded">
+

@@ -1,0 +1,312 @@
+
+---
+title: "Probability Distributions in R"
+date: "2025-01-27"
+output: html_document
+---
+
+## 1. Introduction
+
+This document explores the use of R's probability distribution functions. R provides a comprehensive suite of functions to calculate probabilities, quantiles, random samples, and cumulative probabilities for both discrete and continuous distributions.
+
+---
+
+## Probability Distributions
+
+R provides a series of functions to calculate properties of the distributions from a large number of discrete and continuous distributions.
+
+```{r}
+##n = number of trials
+n <- 100
+
+##p = probability of success
+p <- 0.15
+
+?dbinom
+barplot(dbinom(0:n, n, p), names.arg = 0:n)
+###
+dbinom(5,100, .10)
+
+##CDF
+plot(pbinom(0:20,n,p),type = "b")
+```
+
+
+R has several commands for working with probability distributions like the binomial distribution. These commands are prefixed with `d`, `p`, and `r`. They take a suffix that describes the distribution. For the binomial distribution, these commands are the following:
+
+- `dbinom(k, n, p)` Computes \(P(X = k)\) <br />
+- `pbinom(k, n, p)` Computes \(P(X \leq k)\) <br />
+- `rbinom(k, n, p)` Simulates k random variables <br />
+- `qbinom(k, n, p)` quantiles function, or the inverse cumulative distribution function (CDF)
+
+The quantile function allows you to find the value of the random variable corresponding to a specified cumulative probability.
+
+Example: If you want to know the 95th percentile (the value below which 95% of observations lie) for a normal distribution, you can use:
+```{R}
+qnorm(0.95, mean = 0, sd = 1)
+```
+
+## 2. Discrete Distributions
+
+### 2.1 Binomial Distribution
+
+The binomial distribution is used for scenarios where there are a fixed number of independent trials, each with the same probability of success.
+
+#### Example 1: Binomial Probability and Barplot
+
+```{r}
+# Parameters
+n <- 8  # Number of trials
+p <- 0.15  # Probability of success
+
+# Plot the probability mass function
+barplot(dbinom(0:n, n, p), names.arg = 0:n, main = "Binomial PMF", col = "lightblue")
+```
+
+#### Example 2: Cumulative Distribution Function
+
+```{r}
+# Plot the cumulative distribution function
+plot(pbinom(0:20, n, p), type = "b", main = "Cumulative Distribution Function", col = "darkgreen", pch = 19)
+```
+
+### 2.2 Real-World Example: Root Disease in Trees
+
+In a field of 100 trees, each tree has a 10% chance of being infected by root disease. What is the probability that more than five trees are infected?
+
+#### Calculations:
+
+```{r}
+# Parameters
+n <- 100  # Total trees
+p <- 0.1  # Probability of infection
+k <- 5    # Threshold
+
+# Probability of more than 5 infections
+prob_more_than_5 <- 1 - pbinom(k, n, p)
+prob_more_than_5
+```
+
+#### Visualization:
+
+```{r}
+# Plot CDF with threshold
+plot(pbinom(0:100, n, p), type = "l", main = "Cumulative Probability (Tree Infections)", col = "blue")
+abline(v = k, col = "red", lty = 2)
+```
+
+### 2.3 Airline Overbooking Problem
+
+According to Leder et al. [2002], many airlines consistently report that about 12% of all booked passengers do not show up to the gate due to cancellations and no-shows.
+An airline sells 110 tickets for a flight that seats 100 passengers. Given that 12% of passengers do not show up, what is the probability of overbooking (sold more tickets than seats)?
+
+#### Calculations:
+
+```{r}
+# Parameters
+n <- 110  # Total tickets sold
+p <- 0.88  # Probability of showing up
+k <- 100  # Maximum seats available
+
+# Probability of overbooking
+prob_overbooking <- 1 - pbinom(k, n, p)
+prob_overbooking
+```
+
+#### Visualization:
+
+```{r}
+# Plot probabilities
+plot(pbinom(0:200, n, p), type = "l", main = "Overbooking Probability", col = "purple")
+```
+
+---
+
+## 3. Poisson Distribution
+
+The Poisson distribution models the number of events occurring in a fixed interval of time or space.
+
+#### Example: Genetic Recombination
+
+Suppose a genetics lab has a means to count the number of crossovers between two genes on a chromosome. In 100 samples, 50 cells have no crossovers, 25 cells have one crossover, 20 cells have two crossovers, and 5 cells have three crossovers. Find the probability that a new sample will show at least one crossover.
+
+```{r}
+# Parameter
+# Average number of crossovers per cell
+lambda <- (50*0 + 25*1 + 20*2 + 5*3) / 100
+
+lambda
+
+# Probability of no crossovers
+prob_no_crossover <- dpois(0, lambda)
+prob_no_crossover
+
+# Probability of at least one crossover
+prob_at_least_one <- 1 - ppois(0, lambda)
+prob_at_least_one
+
+dpois(2, lambda)
+?ppois()
+```
+
+#### Visualization:
+
+```{r}
+# Plot Poisson distribution
+plot(dpois(0:10, lambda), type = "h", main = "Poisson Distribution (Crossovers)", col = "orange", lwd = 2)
+```
+
+### Example: Lemonade Stand Profit
+
+Tenzin spends $2 in supplies to set up his lemonade stand. He charges 25 cents a cup. Suppose the number of cups he sells in a day has a Poisson distribution with \(\lambda = 10\). Describe his profit as a function of a random variable and find the probability that the lemonade stand makes a positive profit.
+
+```{r}
+# Lambda (average number of cups sold)
+lambda <- 10
+
+# Probability of making a positive profit
+prob_positive_profit <- 1 - ppois(8, lambda)
+print(paste("The probability of making a positive profit is", round(prob_positive_profit, 4)))
+
+# Simulate one day's profit in cents
+profit <- rpois(1, lambda) * 25 - 200
+print(paste("Simulated profit for one day is", profit, "cents"))
+
+# Simulate the probability of making a profit
+reps <- 1000 # Number of simulations
+simlist <- rpois(reps, lambda) * 25 - 200
+prob_simulated_profit <- sum(simlist > 0) / reps
+print(paste("Simulated probability of making a profit is", round(prob_simulated_profit, 4)))
+```
+
+### Geometric Distribution
+
+Suppose a baseball player has a 30% chance of getting a hit during any at bat. After three times at bat, the player has not had a hit. What is the probability the player will not get a hit after seven times at bat?
+
+```{r}
+# Probability of success (getting a hit)
+p <- 0.3
+
+# Probability of not getting a hit after seven times at bat
+prob_no_hit_after_7 <- dgeom(7, p)
+print(paste("The probability of not getting a hit after seven times at bat is", round(prob_no_hit_after_7, 4)))
+
+# Plot the CDF
+plot(1 - pgeom(0:20, p), type = "l", main = "Geometric Distribution CDF", xlab = "Number of At Bats", ylab = "Cumulative Probability")
+```
+
+### Hypergeometric Distribution
+
+Suppose there are 100 political independents in the student body of 1000. A sample of 50 students is picked. What is the probability there will be six independents in the sample?
+
+```{r}
+# Number of successes in population
+m <- 100
+# Number of failures in population
+n <- 900
+# Sample size
+k <- 50
+
+# Probability of having six independents in the sample
+prob_six_independents <- dhyper(6, m, n, k)
+print(paste("The probability of having six independents in the sample is", round(prob_six_independents, 4)))
+
+# Probability of having more than three independents in the sample
+prob_more_than_three <- 1 - phyper(2, m, n, k)
+print(paste("The probability of having more than three independents in the sample is", round(prob_more_than_three, 4)))
+```
+
+
+---
+
+## 4. Continuous Distributions
+
+### 4.1 Exponential Distribution
+
+The exponential distribution models the time between events in a Poisson process.
+
+#### Example: Help Desk Calls
+
+If the mean time between calls is 4.5 minutes, what is the probability that no call will be received in the next 5 minutes?
+
+```{r}
+# Parameter
+rate <- 1 / 4.5
+
+# Probability of no call in 5 minutes
+prob_no_call <- 1 - pexp(5, rate)
+prob_no_call
+```
+
+---
+
+## 5. Normal Distribution
+
+The normal distribution is widely used in statistics to model real-world phenomena.
+
+#### Example: Baby Birth Weights
+
+Babies’ birth weights are normally distributed with mean \(\mu = 120\) and standard deviation \(\sigma = 20\) ounces. What is the probability that a random baby’s birth weight will be greater than 140 ounces?
+
+```{r}
+# Parameters
+mu <- 120  # Mean
+sigma <- 20  # Standard deviation
+
+# Probability that a random baby’s birth weight will be greater than 140 ounces
+prob_gt_140 <- 1 - pnorm(140, mu, sigma)
+print(paste("The probability that a random baby’s birth weight will be greater than 140 ounces is", round(prob_gt_140, 4)))
+```
+
+
+Among females in the US between the ages of 18 and 74, diastolic blood pressure is normally distributed with mean 77 mm Hg and standard deviation of 11.6 mm Hg. What is the probability that a randomly selected woman has a diastolic blood pressure less than 60 mm Hg? greater than 90 mm Hg? between 60 and 90 mm Hg?
+
+```{r}
+#  X ~ N(77, 134.56)
+?pnorm
+
+# Calculation for DBP < 60
+prob_less_60 <- pnorm(60, 77, 11.6)
+prob_less_60
+
+##P(Z < ((60 - 77)/11.6)) = 
+##P(Z < -1.46551724137931) = 
+##pnorm(-1.46551724137931) = 
+##0.0713899259455208
+#7% chance a randomly selected woman has diastolic bp less than 60mmHg
+
+# Calculation for DBP > 90
+prob_greater_90 <- 1 - pnorm(90, 77, 11.6)
+prob_greater_90
+
+#P(Z > ((90 - 77)/11.6)
+
+##= P(Z < 1.12068965517241)
+##= pnorm(1.12068965517241)
+##= 1 - pnorm(1.12068965517241)
+##= 0.131209993551487
+
+#A randomly selected woman has a 13.1% chance of having a diastolic blood pressure above 90 mm Hg.
+
+# Calculation for 60 < DBP < 90
+
+
+(1-pnorm(60,77,11.6))-(1-pnorm(90,77,11.6))
+
+.869-.071
+
+#or
+
+prob_between_60_90 <- pnorm(90, 77, 11.6) - pnorm(60, 77, 11.6)
+prob_between_60_90
+
+#P(((60 - 77)/11.6) < Z < ((90 - 77)/11.6)) =
+#(-1.46551724137931 < Z < 1.12068965517241) =
+#(1 - 0.131209993551487) - 0.0713899259455208 = 
+##0.797400080502992
+
+#P(60<X<90)=0.7974 (approximately 79.7% chance).
+#A randomly selected woman has a 79.7% chance of having a diastolic blood pressure between 60 and 90 mm Hg.
+
+```
+---
