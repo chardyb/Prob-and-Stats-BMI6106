@@ -204,6 +204,9 @@ setwd("/Users/carterhardy/spring 2025 UU/Prob-and-Stats-BMI6106")
 dia_data <- read.csv("diabetes.csv")
 head(dia_data, n = 5)
 ```
+```{r}
+any(dia_data$Glucose == 0  & dia_data$Outcome == 0)
+```
 
 
 #### 2. How many patients have diabetes?<br>
@@ -229,7 +232,16 @@ summary_no_dia <- no_dia_obs %>%
   summarize(mean = mean(Glucose), var = var(Glucose))
 summary_no_dia
 ```
-##### The mean and variance of glucose levels for individuals without diabetes is a mean of 109.98 and a var of 683.36 
+##### The mean and variance of glucose levels for individuals without diabetes is a mean of 109.98 and a var of 683.36. This variance appears to be incorrect, so I am going to take the zero values out of the Glucose column and attempt it again.
+
+```{r}
+clean_glucose <- subset(no_dia_obs, Glucose != 0)
+clean_summary_no_dia <- clean_glucose %>% 
+  summarize(mean_gl = mean(Glucose), var_gl = var(Glucose))
+clean_summary_no_dia
+#any(dia_data$Glucose > 200) this returned False
+```
+#### With taking out the zeros and checking that Glucose levels were under 200 the glucose variance is 616, that is lower than 683 but still seems high. So now, the mean and variance of glucose levels for individuals without diabetes is a mean of 109.98 and a var of 616.82.
 
 #### 5. Create a new discrete variable that has 1 if the individual has diabetes and high blood pressure (above 100), 2 if an indivual has diabetes and low blood pressure and 3 if the individual does not have diabetes.<br>
 ```{r}
@@ -241,11 +253,12 @@ dia_data = dia_data %>%
   ))
 head(dia_data$HighBpDiabetes)
 ```
-
+#### I created a new discrete variable, named HighBpDiabetes, that has 1 if the individual has diabetes and high blood pressure (above 100), 2 if an indivual has diabetes and low blood pressure and 3 if the individual does not have diabetes. Here are show the first six outcomes of the new discrete variable HighBpDiabetes.
 
 #### 6. Construct two plots of the distribution of BMI for individuals with diabetes and without diabetes<br><br>
+
+#### When I first created the histograms I noticed that there were some BMI entries of zero. This would be impossible to have a BMI value of zero, so I assumed there was an input error by the patient or a non-entry got converted to zero. This data has had the BMI values of zero taken out.
 ```{r}
-#After my first attempt I noticed BMI values of zero. This is first removing them
 diabetes_obs <- diabetes_obs %>%
   filter(BMI != 0)
 
