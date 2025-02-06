@@ -1,0 +1,82 @@
+---
+title: "Problem Set 2 - Carter Hardy"
+output: html_document
+date: "2025-02-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Problem 1
+#### Load the dataset
+```{r}
+
+birth <- read.table("/Users/carterhardy/spring 2025 UU/Prob-and-Stats-BMI6106/Problem set 2/birthwt.txt", header = TRUE, sep = " ")  
+
+```
+
+### A. How many observations are in the dataset?
+#### I can see when I load in the data that there are 189 observations
+
+### B. Examine each column
+
+### C. How many individuals older than 30 smoke?
+```{r}
+#Filter the age of observations to those above 30
+filtered_birth = birth[birth$age > 30, ]
+
+#out of those above the age 30, sum of the ones who smoke
+sum(filtered_birth$smoke == 1)
+```
+### D. plot a histogram of birth weights
+```{r}
+#this code creates a histogram of birth weights
+hist(birth$bwt,
+     main = "Histogram of Birth Weight",
+     xlab = "Birth Weight (bwt) in Grams")
+```
+
+### G. Calculate the probability of randomly selecting an individual that has either a low birth weight or a mother who was a smoker. 
+
+#### In order to find this, we will calculate P(A or B) = P(A) + P(B) - P(A & B)
+
+```{r}
+
+#total number of observations
+n <- nrow(birth)
+
+#prob of low birth weight
+p_low = sum(birth$low == 1) / n
+
+#prob of a mother who was a smoker
+p_smoker = sum(birth$smoke == 1) / n
+
+#prob of low birth weight and mother who was a smoker
+p_both = sum(birth$smoke == 1 & birth$low == 1) / n
+
+#P(A or B) = P(A) + P(B) - P(A & B)
+p_union = p_low + p_smoker - p_both
+
+p_union
+
+
+```
+
+### H. Calculate the probability of randomly selecting an individual that is white and has more than 3 physician visits during the first trimester.
+```{r}
+#P(A & B) 
+
+#probability of both (individual is white and has more than 3 visits during first tri) divided by the total number of observations 
+joint <- sum(birth$race == 1 & birth$ftv > 3) / n
+
+joint
+```
+
+
+
+
+
+
+
+
