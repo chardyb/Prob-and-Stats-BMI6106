@@ -17,9 +17,80 @@ birth <- read.table("/Users/carterhardy/spring 2025 UU/Prob-and-Stats-BMI6106/Pr
 ```
 
 ### A. How many observations are in the dataset?
-#### I can see when I load in the data that there are 189 observations
+I can see when I load in the data that there are 189 observations
+```{r}
+#total number of observations
+n <- nrow(birth)
+
+n
+```
+
 
 ### B. Examine each column
+#### Columns:
+low: Categorical, discrete variable 
+
+age: Numerical, continuous variable 
+
+lwt: Numerical, continuous variable
+
+race: Categorical, discrete variable
+
+smoke: Categorical, discrete variable
+
+ptl: Numerical, discrete variable
+
+ht: Categorical, discrete variable
+
+ui: Categorical, discrete variable
+
+ftv: Numerical, discrete variable
+
+bwt: Numerical, continuous variable
+
+#### Discrete:
+low: Binary, 0 1 
+
+race: Nominal, 1 2 3  
+
+smoke: Binary, 0 1
+
+ptl: Ordinal, 0 1 2 3
+
+ht:Binary, 0 1
+
+ui: Binary, 0 1 
+
+ftv: Ordinal, 0 1 2 3 4 6
+
+```{r}
+#code to find the levels for each discrete variable
+unique(birth$low)
+unique(birth$race)
+unique(birth$smoke)
+unique(birth$ptl)
+unique(birth$ht)
+unique(birth$ui)
+unique(birth$ftv)
+```
+
+
+#### Continuous
+age
+lwt
+bwt
+```{r}
+library(psych)
+
+#code to get descriptive stats for our cont. variables
+describe(birth[, c("age", "lwt", "bwt")])
+```
+We can see the mean, sd, and median for age is 23.24, 5.30, and 23.
+
+We can see the mean, sd, and median for lwt is 129.81, 30.58, and 121.
+
+We can see the mean, sd, and median for bwt is 2944.66, 729.02, and 2977.
+
 
 ### C. How many individuals older than 30 smoke?
 ```{r}
@@ -39,12 +110,9 @@ hist(birth$bwt,
 
 ### G. Calculate the probability of randomly selecting an individual that has either a low birth weight or a mother who was a smoker. 
 
-#### In order to find this, we will calculate P(A or B) = P(A) + P(B) - P(A & B)
+In order to find this, we will calculate P(A or B) = P(A) + P(B) - P(A & B)
 
 ```{r}
-
-#total number of observations
-n <- nrow(birth)
 
 #prob of low birth weight
 p_low = sum(birth$low == 1) / n
@@ -73,10 +141,98 @@ joint <- sum(birth$race == 1 & birth$ftv > 3) / n
 joint
 ```
 
+# Problem 2
+
+### A. What is the probability that given a positive mammogram exam, a woman has a positive cancer diagnosis? Assume that the breast cancer incidence rate is 1%, the positivity rate for the exam if a patient has cancer is 90%, and there is a false positive rate of 8% for the exam. 
+
+p(postive cancer diagnosis | positive mammogram exam)
+
+P(cancer) = .01
+
+P(positive | cancer) = .9
+
+false positive = P(positive | no cancer) = .08
+
+P(cancer | positive test) = $\frac{P(positive | cancer)  * P(cancer)}{P(positivetest)}$ 
+
+First we need to find P(positive test):
+P(positive) = P(pos | cancer) * p(cancer) + p(pos | no cancer) * p(no cancer)
+```{r}
+prob_positive <- (.9)*(.01) + (.08)*(.99)
+prob_positive
+```
 
 
+Next, we can now use Bayes to calculate the probability of having cancer given having a positive test  
+P(cancer | positive test) = $\frac{P(positive | cancer)  * P(cancer)}{P(positivetest)}$
+```{r}
+prob_can_given_positive <- (.9 * .01) / prob_positive
+prob_can_given_positive
+```
 
 
+### B. For every attempt to call your friend, there is a 70% probability of actually speaking with them. Calculate the probability of having exactly 12 successes in 20 attempts. 
+```{r}
+#Binomial distribution 
+
+#number of trials
+calls <- 20
+
+#prob of success
+p <- 0.7
+
+#number of successes
+k <- 12
+
+#compute probability using binomial distribution
+prob <- dbinom(k, calls, p)
+
+prob
+
+```
+the probability of having exactly 12 success in 20 attempts is .114
+
+### C. The cholesterol levels of a group of patients are normally distributed with a mean of 200 mg/dL and a standard deviation of 25 mg/dL. 
+
+#### 1.	What is the probability that a randomly selected patient will have a cholesterol level between 180 mg/dL and 220 mg/dL? 
+```{r}
+#probability of 180 and below P(X<= 180)
+low <- pnorm(180, 200, 25)
+
+#probability of 220 and below P(X<= 220)
+high <- pnorm(220, 200, 25)
+
+#probability between 220 and 180 by subtracting P(X<= 220) - P(X<= 180)
+high - low
+```
 
 
+#### 2.	Additionally, calculate the interquartile range (IQR) of the cholesterol levels.
+```{r}
+
+#25th percentile
+Q1 <- qnorm(.25, 220, 25)
+
+#75th percentile
+Q3 <- qnorm(.75, 220, 25)
+
+#IQR
+IQR_value <- Q3 - Q1
+
+
+IQR_value
+```
+
+#### 3.	Discuss how these statistics can be used to identify patients at risk of cardiovascular diseases 
+These stats help us assess normal v abnormal values and detect outliers. Understanding the probability of a cholesterol level falling within a given range helps us determine how common or uncommon certain cholesterol levels are within our population. Similarly, the IQR provides insight into the spread and variability of cholesterol levels, highlighting where the middle 50% of values lie. 
+
+#### 4.	How the distribution might change if the standard deviation were reduced to 15 mg/dL? 
+If we reduced the sd to 15, the distribution of cholesterol levels would become more concentrated around the mean. Since SD represents the spread of the data, a smaller SD means values are clustered more tightly, increasing the probability that a randomly selected patient will have cholesterol levels between 180 and 220 mg/dL. With less variability, more data points will fall within this range.  
+The IQR would decrease as well. A lower SD compresses the data, causing most cholesterol levels to be closer together.
+
+# Problem 3
+### Part 1
+
+
+### Part 2
 
