@@ -233,6 +233,123 @@ The IQR would decrease as well. A lower SD compresses the data, causing most cho
 # Problem 3
 ### Part 1
 
+a) Load the dataset in your preferred language and perform an initial exploration. What are the dimensions of the dataset? Are there any missing values? (2 pts)
+```{r}
+data <- read.csv('/Users/carterhardy/spring 2025 UU/Prob-and-Stats-BMI6106/Problem set 2/Breast_cancer_Naive.csv')
+
+dim(data)
+```
+here are 569 observations by 32 columns
+```{r}
+anyNA(data)
+```
+there is not any missing values
+
+b) Summarize the key characteristics of the dataset using appropriate descriptive statistics and visualizations. What are the distributions of numerical features? 
+
+```{r}
+library(dplyr)
+
+data %>%
+  summarize(
+    unique_values = n_distinct(diagnosis),
+    most_common = names(sort(table(diagnosis), decreasing = TRUE))[1]
+  )
+
+library(ggplot2)
+
+ggplot(data, aes(x = diagnosis, fill = diagnosis)) +
+  geom_bar() +
+  labs(title = "Count of Diagnoses", x = "Diagnosis", y = "Count") +
+  theme_minimal()
+
+
+```
+
+
+```{r}
+library(skimr)
+library(dplyr)
+options(scipen = 999)
+skim(data %>% select(-c(1, 2)))
+
+```
+
+Key histograms:
+```{r}
+hist(data$radius_mean,
+     main = 'Histogram of Mean Radius')
+```
+
+
 
 ### Part 2
+a.	Preprocess the data for Naïve Bayes classification. Make sure to encode categorical variables (if any) and split the data into training and testing sets (70-30 split). Show your code and explain your preprocessing steps. 
+
+```{r}
+#changing categorical variable diagnosis to a factor
+data <- data %>%
+  mutate(diagnosis_num = factor(diagnosis, levels = c("B", "M")))
+
+#subsetting my data to not include id and diagnosis now that I have dianosis_num
+data_subset <- data[, -c(1, 2)] 
+
+#The reason I am doing this is because the only column I am actually leaving out is ID, which is not need for my naive bayes classifier.
+```
+
+split the data into training and testing sets
+```{r}
+library(caret)
+set.seed(123)
+
+data_subset$diagnosis_num <- as.factor(data_subset$diagnosis_num)
+
+
+train_index <- createDataPartition(data_subset$diagnosis_num, p = 0.7, list = FALSE)
+
+train_data <- data_subset[train_index, ]
+test_data <- data_subset[-train_index, ]
+
+```
+
+```{r}
+#check the dimensions of the training and test data
+dim(train_data)  # Should be ~70% of total rows -- 398 / 569 is close to 70%
+
+dim(test_data)
+```
+
+
+b.	Train a Naïve Bayes classifier. Which are the features with the highest contribution to the classifier? Report the accuracy, sensitivity, and specificity of your model. 
+
+```{r}
+y <- train_data$diagnosis_num
+x <- train_data[, 1:30]
+
+
+model = train(x,y,'naive_bayes',trControl=trainControl(method='cv',number=10))
+```
+
+
+```{r}
+Predict <- predict(model,newdata = test_data )
+```
+
+c.	Create and interpret the confusion matrix. What does it tell you about the model's performance? Are there any potential concerns regarding false positives or false negatives? 
+
+```{r}
+confusionMatrix(Predict, test_data$diagnosis_num)
+```
+
+
+d.	Plot the ROC curve for your Naïve Bayes model and compute the AUC (Area Under the Curve). What does the AUC tell you about the classifier's ability to distinguish between benign and malignant cases? 
+```{r}
+##Plot ROC curve
+library(pROC)
+roc_ = roc(test_data$diagnosis_num, predict(model, newdata = test_data, type = "prob")[,2])
+
+
+plot(roc_,print.auc=T)
+```
+
 
