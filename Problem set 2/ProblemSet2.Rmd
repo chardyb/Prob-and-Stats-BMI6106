@@ -17,14 +17,14 @@ birth <- read.table("/Users/carterhardy/spring 2025 UU/Prob-and-Stats-BMI6106/Pr
 ```
 
 ### A. How many observations are in the dataset?
-I can see when I load in the data that there are 189 observations
+
 ```{r}
 #total number of observations
 n <- nrow(birth)
 
 n
 ```
-
+There are **189** observations
 
 ### B. Examine each column
 #### Columns:
@@ -85,11 +85,11 @@ library(psych)
 #code to get descriptive stats for our cont. variables
 describe(birth[, c("age", "lwt", "bwt")])
 ```
-We can see the mean, sd, and median for age is 23.24, 5.30, and 23.
+We can see the mean, sd, and median for age is **23.24, 5.30, and 23.**
 
-We can see the mean, sd, and median for lwt is 129.81, 30.58, and 121.
+We can see the mean, sd, and median for lwt is **129.81, 30.58, and 121.**
 
-We can see the mean, sd, and median for bwt is 2944.66, 729.02, and 2977.
+We can see the mean, sd, and median for bwt is **2944.66, 729.02, and 2977.**
 
 
 ### C. How many individuals older than 30 smoke?
@@ -127,8 +127,6 @@ p_both = sum(birth$smoke == 1 & birth$low == 1) / n
 p_union = p_low + p_smoker - p_both
 
 p_union
-
-
 ```
 
 ### H. Calculate the probability of randomly selecting an individual that is white and has more than 3 physician visits during the first trimester.
@@ -188,9 +186,8 @@ k <- 12
 prob <- dbinom(k, calls, p)
 
 prob
-
 ```
-the probability of having exactly 12 success in 20 attempts is .114
+The probability of having exactly 12 success in 20 attempts is **.114**
 
 ### C. The cholesterol levels of a group of patients are normally distributed with a mean of 200 mg/dL and a standard deviation of 25 mg/dL. 
 
@@ -239,7 +236,8 @@ data <- read.csv('/Users/carterhardy/spring 2025 UU/Prob-and-Stats-BMI6106/Probl
 
 dim(data)
 ```
-here are 569 observations by 32 columns
+There are 569 rows (observations) by 32 columns
+
 ```{r}
 anyNA(data)
 ```
@@ -272,13 +270,24 @@ library(skimr)
 library(dplyr)
 options(scipen = 999)
 skim(data %>% select(-c(1, 2)))
-
 ```
 
-Key histograms:
+.  
+
+*What are the distributions of numerical features?*  
+
+We can see a small histogram of every column and its distribution, they all vary, but it appears that the distribution of the numerical feautures are right skewed.  
+I picked out 2 key variables to highlight:
+
 ```{r}
+#Key histograms:
 hist(data$radius_mean,
      main = 'Histogram of Mean Radius')
+```
+```{r}
+#Key histograms:
+hist(data$perimeter_worst,
+     main = 'Histogram of  Perimeter Worst')
 ```
 
 
@@ -304,9 +313,10 @@ set.seed(123)
 
 data_subset$diagnosis_num <- as.factor(data_subset$diagnosis_num)
 
-
+#split 70 percent of the data
 train_index <- createDataPartition(data_subset$diagnosis_num, p = 0.7, list = FALSE)
 
+#create the training and testing data
 train_data <- data_subset[train_index, ]
 test_data <- data_subset[-train_index, ]
 
@@ -326,21 +336,33 @@ b.	Train a Naïve Bayes classifier. Which are the features with the highest cont
 y <- train_data$diagnosis_num
 x <- train_data[, 1:30]
 
-
+#Naïve Bayes classifier
 model = train(x,y,'naive_bayes',trControl=trainControl(method='cv',number=10))
-```
 
-
-```{r}
-Predict <- predict(model,newdata = test_data )
+#print importance to show the highest contributions to the classifier
+importance <- varImp(model)
+print(importance)
 ```
+The **five features with the highest contribution to the classifier** are **perimeter_worst**, **concave.points_worst**, **radius_worst**, **area_worst**, and **concave.points_mean**.
+
+Based on the confusion matrix I create in part 3, the **accuracy, sensitivity, and specificity** of the model is:  
+
+**Accuracy:** .9412  
+
+**Sensitivty:** .9346  
+
+**Specificity:** .9524
 
 c.	Create and interpret the confusion matrix. What does it tell you about the model's performance? Are there any potential concerns regarding false positives or false negatives? 
 
 ```{r}
+#create the confusion matrix
+Predict <- predict(model,newdata = test_data )
 confusionMatrix(Predict, test_data$diagnosis_num)
 ```
+The confusion matrix with an accuracy of .9412, a sensitivity of .9346, and a specificity of .9524, tells us that our model **preforms well**.  
 
+Based on our sensitivity and our specificity, I do not believe there are any potential concerns regarding false positives or false negatives. The high sensitivity suggests that the model is effective in detecting cancerous tumors, while the high specificity shows that there is not a need to be concerned in false positives.  
 
 d.	Plot the ROC curve for your Naïve Bayes model and compute the AUC (Area Under the Curve). What does the AUC tell you about the classifier's ability to distinguish between benign and malignant cases? 
 ```{r}
@@ -348,8 +370,12 @@ d.	Plot the ROC curve for your Naïve Bayes model and compute the AUC (Area Unde
 library(pROC)
 roc_ = roc(test_data$diagnosis_num, predict(model, newdata = test_data, type = "prob")[,2])
 
-
 plot(roc_,print.auc=T)
 ```
 
+
+
+
+
+The **AUC score of .983** tells us that the Naive Bayes classifier has a high ability to distinguish between benign and malignant cases. This suggests that the model is highly effective at correctly identifying cancerous tumors.
 
