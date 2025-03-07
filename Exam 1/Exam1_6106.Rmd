@@ -1,0 +1,232 @@
+---
+title: "Exam 1 BMI 6106"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+    df_print: paged
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+  word_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Due March 19th 11:59pm
+
+### As for other problem sets for this course, all answers should be submitted as a single .R file. To receive full credit for answers, make sure to (1) annotate your code, (2) use annotations to explain your reasoning, and (3) ensure that your code can be run.
+
+#### In this assignment we are going to review the concepts from class this week. However, concepts build on each other for every test you run you need to make sure that the data meets the appropiate criteria to be able to run the test ####Important: Use comments throughout your code to:
+
+#### Indicate which question you are answering
+
+#### Example: #Question 1A, #Question 1B, etc
+
+#### Annotate your work
+
+#### Examples: #Calculate the mean for ‘height’
+
+#### P(being on time) = 1/6
+
+#### If you do not provide annotation, we will not be able to give you full credit for solving the problems.
+
+#### If you have any questions about what is being asked or what you need to do in order to solve the problems, please reach out to a TA or instructor as soon as possible. If it is necessary to provide additional information or corrections, updated information will be posted on the HW3 Assignment page in Canvas.
+
+## **Question 1** - 20 points
+
+### **Background**
+
+Using the bayes theorem we can derive the (maybe surprising) result that in families that have 2 children along with the knowledge that at least one of the children is a boy born on a Wednesday, the probability that the family has 2 boys is 13/27 (\~.48). We can test this calculation by randomly generating many “two child families” and counting the number that fulfill the criteria of (1) having a boy born on a Wednesday and (2) of these families having two boys.
+
+### **Analysis Steps**
+
+Write R code to simulate 10,000 two-child families and count the frequency of two-boy families amongst all families with at least one Wednesday-born boy. In your answer, you should (A, 8 pts) provide the annotated code and report the frequency your code produced; (B, 4 pts) explain your approach. The code should be annotated and runnable by us if we copy into RStudio. As before, assume that children are born with exactly 50/50 probability that they are a “boy” or a “girl” and that births occur on each day of the week with an equal probability.
+
+```{r Q1}
+#(there are many ways to approach this question). You can create a function that simulates the families or just sample the families n number of times
+
+
+
+```
+
+------------------------------------------------------------------------
+
+## **Question 2** - 15 points
+
+We classify 2000 emails in two groups: 1000 emails as spam and 1000 emails as non-spam. 210 of the spam emails contained the phrase This isn’t spam, 99 had the word prize and 110 the word prince. Of the 99 that contained the word prize, 79 also contained the word prince. On the other hand, of the 1000 non-spam emails, only 23 had the phrase this isn’t spam, 80 the word prize and 110 the word prince. Of the 80 that contained the word prize 8 also contained the word prince.
+
+### **Analysis Steps**
+
+Assuming that the a priori probability of any message being spam is 0.5, what is the probability that an email is spam given it contains the phrase This isn't spam
+
+------------------------------------------------------------------------
+
+## **Question 3** - 15 points
+
+#### From the Cleveland Heart Disease dataset (attached to this folder - [ <https://archive.ics.uci.edu/ml/datasets/Heart+Disease> ] )
+
+\*\*A. if we pick 25 patients randomly, find the probability that at least 3 have less than 50 percent diameter narrowing (num variable 14 in dataset state 0 - condition). Answer this question using one of the distributions seen in class you can confirm the answer with the R functions. (7 points)
+
+\*\*B. Assume that patients are examined at random, what is the average number of patients before the first patient with cholesterol levels above than 300 (including 300) is encountered? Answer this question using one of the distributions seen in class you can confirm the answer with the R functions. (8 points)
+
+------------------------------------------------------------------------
+
+### Questions 4 - 6 will be answered using a subset of the MEPS dataset
+
+### **Background**
+
+The **Medical Expenditure Panel Survey (MEPS)** is a nationally representative survey conducted by the **Agency for Healthcare Research and Quality (AHRQ)**. It provides comprehensive data on healthcare utilization, expenditures, insurance coverage, and medical conditions for individuals and families in the United States.
+
+In this analysis, we will focus on a **subset of the 2019 MEPS Full-Year Consolidated Data** to explore healthcare expenditures, self-reported health status, chronic conditions, and demographic factors.
+
+Metadata can be located at <https://meps.ahrq.gov/data_stats/download_data/pufs/h216/h216doc.shtml>
+
+#### **Variables Included in This Analysis**
+
+-   **Demographics:**
+    -   `DUPERSID`: Unique person identifier.
+    -   `AGELAST`: Age of respondent.
+    -   `SEX`: Gender (1 = Male, 2 = Female).
+    -   `RACETHX`: Race/Ethnicity.
+    -   `REGION19`: Geographic region.
+    -   `MARRY19X`: Marital status.
+    -   `EDUCYR`: Years of education.
+-   **Health Conditions:**
+    -   `RTHLTH53`: Self-reported health status; levels = 1:5, labels = c("Excellent", "Very Good", "Good", "Fair", "Poor")
+    -   `MNHLTH53`: Self-reported mental health status.
+    -   `HIBPDX`: Hypertension diagnosis.
+    -   `DIABDX_M18`: Diabetes diagnosis.
+    -   `CHDDX`: Coronary heart disease diagnosis.
+    -   `ASTHDX`: Asthma diagnosis.
+    -   `ADCLIM42`: Physical activity limitation
+-   **Healthcare Expenditures:**
+    -   `TOTEXP19`: Total healthcare expenditures.
+    -   `TOTSLF19`: Out-of-pocket expenditures.
+-   **Socioeconomic Status:**
+    -   `INSCOV19`: Insurance coverage type.
+    -   `POVCAT19`: Poverty category.
+-   **Some important codes for some discrete variables - check metadata for other codes**
+    -   `Inapplicable`: (-1) (e.g., question was not relevant for the respondent)
+    -   `Determined in previous round`: (-2) Question was not asked in round because there was no change in current main job since previous round
+    -   `Refused`: (-7)
+    -   `Don't Know`: (-8)
+    -   `Not Asked/Cannot be Computed`: (-15)
+
+------------------------------------------------------------------------
+
+## **Question 4** - 10 points
+
+### **Scenario - Effect of Health Status on Healthcare Expenditures - One-Way ANOVA**
+
+Healthcare expenditures vary widely based on self-reported health status. We hypothesize that individuals with poorer self-reported health will have significantly higher medical expenditures than those reporting better health.
+
+### **Research Question**
+
+Is there a significant difference in **log-transformed total healthcare expenditures** among individuals with different self-reported health statuses (Excellent, Very Good, Good, Fair, Poor)?
+
+### **Hypotheses**
+
+-   **Null Hypothesis (H₀)**: There is no significant difference in mean healthcare expenditures between health status groups.
+-   **Alternative Hypothesis (H₁)**: At least one health status group has significantly different mean expenditures from another.
+
+### **Analysis Steps**
+
+1.  Conduct exploratory data analysis (EDA) to examine distributions.
+2.  Check for normality and homogeneity of variances.
+3.  Perform **one-way ANOVA** to test for group differences.
+4.  If significant, conduct **Tukey's HSD** post-hoc test.
+5.  Calculate effect size (**eta-squared**).
+6.  Perform power analysis to determine required sample size.
+
+------------------------------------------------------------------------
+
+## **Question 5** - 10 points
+
+### **Scenario - Self-Reported Physical vs. Mental Health - Paired t-Test**
+
+Physical and mental health status are closely related, yet individuals may rate them differently. We aim to compare **standardized self-reported physical and mental health scores**.
+
+### **Research Question**
+
+Is there a significant difference between an individual’s self-reported physical health and mental health scores?
+
+### **Hypotheses**
+
+-   **Null Hypothesis (H₀)**: There is no difference in self-reported physical and mental health scores.
+-   **Alternative Hypothesis (H₁)**: There is a significant difference between the two.
+
+### **Analysis Steps**
+
+1.  Standardize physical and mental health scores.
+2.  Check normality of differences.
+3.  Perform **paired t-test**.
+4.  Calculate **Cohen's d** effect size.
+5.  Conduct power analysis.
+
+------------------------------------------------------------------------
+
+## **Question 6:** - 10 points
+
+### **Scenario - Effect of Hypertension on Healthcare Costs - Mann-Whitney U Test**
+
+Individuals with **hypertension** often have higher medical costs due to ongoing treatments and medications. However, is this difference significant?
+
+### **Research Question**
+
+Do individuals with hypertension have significantly different healthcare expenditures compared to those without?
+
+### **Hypotheses**
+
+-   **Null Hypothesis (H₀)**: There is no difference in median healthcare expenditures between individuals with and without hypertension.
+-   **Alternative Hypothesis (H₁)**: There is a significant difference.
+
+### **Analysis Steps**
+
+1.  Compare distributions of expenditures.
+2.  Perform **Mann-Whitney U test**.
+3.  Calculate **effect size (r)**.
+4.  Conduct power analysis.
+
+------------------------------------------------------------------------
+
+## **Question 7** - 10 points
+
+### HMM
+
+### A. Hidden Markov Models are used to solve for three fundamental problems, what are they and what algorithms do we use to solve for each? (6 points)
+
+### B. Given the following hidden markov model (4 points)
+
+![](images/clipboard-2787454934.png)
+
+### What algorithm does this represent?
+
+## $$ P(X_{k+1:n}|S_k,X_{1:k}) \cdot P(S_k,X_{1:k})$$
+
+## **Question 8: HMM** - 10 points
+
+You are collaborating with a research group who are trying to see the affect of exercise on mental health. As part of this, they are using fitbits to monitor heart rate and want you to help them determine when the participants are exercising, walking, or resting. Implement a GaussianHMM from hmmlearn (or your choice of another package) to help them in this process
+
+[Open starter code in Google Colab](https://colab.research.google.com/drive/1qywgeYfjw97WfT-5QsL84iVTgeMHxoCi)
+
+### **A.** Using the data and no prior knowledge, fit a Gaussian HMM and report the means and covariances of each state. Using the means, infer which state is resting, which is walking, and which is exercising (5 points)
+
+```{python}
+### Starter Code
+### import pandas as pd
+### from hmmlearn import hmm
+
+### Load data
+### data = pd.read_csv('heart_rates.csv')
+### data
+```
+
+### **B.** What was the patient doing between hours 75-79? (5 points)

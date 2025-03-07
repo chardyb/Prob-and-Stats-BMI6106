@@ -1,0 +1,276 @@
+---
+title: "Homework 3"
+output: 
+  html_document:
+    toc: true # table of content true
+    toc_depth: 2  # upto three depths of headings (specified by #, ## and ###)
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    df_print: paged
+  # 
+  # number_sections: true  ## if you want number sections at each table header
+  # theme: united  # many options for theme, this one is my favorite.
+  # highlight: tango  # specifies the syntax highlighting style
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Carter Hardy
+#### We would like to include some instructions regarding submission of problem sets to be able to fairly, consistently and efficiently grade your assignments.
+
+#### 1. Please submit just one document this document can be an .R script or a format that allows evaluation of your code and data (Jupyter, python script, etc) with all the necessary text (answers, discussions, analysis) which can be added to the script as comments (remember that a comment starts with the # symbol in R)
+
+#### 2.Once you have solved a problem with the code and the result needs to be printed by just calling the variable created. For example, if you are calculating the mean of a distribution and save the result as variable a = mean(x) then the next line needs to be a call to a, either print(a) or just a, so that when we run the code to check on your work we can evaluate your responses correctly.
+
+#### 3.The final answer needs to be written down as a comment; just having the final number as an answer will result in point deductions as in most cases the question is not asking for a number but for a statistical analysis. Eg. The t-test had a p-value of 0.001 t = 4.6 n = 30 (this is the correct way to present the results from a t-test, you can also include the 95CI), which indicates that we reject the null hypothesis that the mean blood pressure in treatment 1 is the same as in the placebo group.
+
+#### 4.We will not accept screenshots of code or results.
+
+#### 5.If there are plots in the results, you don’t need to print the plots using a different document, just have the code and we will run it and see the plot that you created.
+
+#### 6.It is ok to work together and copy code from exercises, peers, class examples, etc, but it is not ok to copy identical workflows and answers from classmates. Copying another’s answers verbatim is considered plagiarism and will result in a zero for the assignment as well as other potential consequences according to Program and University guidelines. It is ok to use LLMs to help with the code, but not for the analysis, this should be your own.
+
+#### 7.The penalty for turning in a late assignment is 10% reduction in grade per day (see course syllabus). 
+<hr class="rounded">
+
+# Homework 3
+
+
+## 1.
+
+### A biomedical informatics researcher is investigating the relationship between smoking and multiple biological measurements. We want to compare the mean age for both smokers and non-smokers and we want to sample participants from each group proportionally to their representation in the population. The dataset smoking.csv contains this information, with two columns: "age" (numeric) and "smoking" (factor with 2 levels "0" and "1" [yes/no]). Answer the following questions using the concepts seen in class.
+
+
+#### 1. **Point Estimate:**
+####   Calculate the mean age for the entire population based on the collected sample.
+```{r}
+smoking_data<- read.csv('smoking.csv')
+#Data exploration
+str(smoking_data)
+#Summary statistics
+#summary(smoking_data)
+head(smoking_data)
+print(nrow(smoking_data))
+
+#divide into smoking and non smoking 
+#originally I split the data into smoking and non-smoking, but after talking to Javier, that was unnecessary
+
+print(summary(smoking_data$age))
+
+```
+
+* Why is the sample mean considered an unbiased estimator of the population mean?
+
+#### The sample mean is considered an unbiased estimator of the population mean because the expected value of the sample mean is equal to the population mean, meaning that the average of all sample means would be equal to the population mean.
+
+* What are some potential sources of bias when estimating the mean age in **this** dataset?
+
+#### One source of bias when estimating the mean age in this dataset could be that tabacco is typically illegal for people under the age of 18 or 21 depending on the area. As a result, younger individuals may be underrepresented, leading to a higher average age. Another idea is that younger people may not be as likely to smoke, so the average age would skew higher because older people might tend to smoke more than younger people. 
+
+
+#### 2. **Random Sampling:**
+####   Randomly select a subset of 50 patients from the dataset without replacement. Calculate the mean age for this subset.
+```{r}
+library(dplyr)
+#creating sample data
+sample_data <- sample_n(smoking_data, 50)
+
+#getting summary of sample data age
+summary(sample_data$age)
+
+```
+
+
+* What are the potential consequences of sampling with versus without replacement?
+
+#### Sampling without replacement puts the last observation seen back into the pool of sampling, if there is a large population this may not be a big issue, but it could still allow an observation to be picked multiple times and possibly skewing the data by bringing their data in multiple times when one time was all that was neccessary. One potential consequence of sampling without replacement is that the population pool shrinks as each new observation is taken out. If the population pool is small and realitevly close to the same size as the sample population, for example a population of 70 and a sample of 50, this would leave out 20 observations which could lead to some data being skewed or not reflecting the population if those 20 random observations left out happened to be extremes. 
+
+#### 3. **Resampling:**
+####   Perform bootstrapping on the entire dataset to estimate the sampling distribution of the mean age for the cohort Use 1000 bootstrap samples and calculate the mean age for each sample.
+
+```{r}
+#boot strapping data by using a function I created
+set.seed(124)
+boot_mean <- function(data, indices){
+  return(mean(data[indices]))
+}
+results <- replicate(1000, boot_mean(smoking_data$age, 
+                     sample(1:nrow(smoking_data), nrow(smoking_data), replace = TRUE)))                  
+results
+```
+
+* How does the number of bootstrap samples affect the accuracy of the estimated distribution? Demonstrate with this data. (Tip plot of means v # bootstrap samples)
+
+#### code & answer to this question below 
+```{r}
+results_small <- replicate(10, boot_mean(smoking_data$age, 
+                     sample(1:nrow(smoking_data), nrow(smoking_data), replace = TRUE)))
+results_hundred <- replicate(100, boot_mean(smoking_data$age, 
+                     sample(1:nrow(smoking_data), nrow(smoking_data), replace = TRUE))) 
+results_small
+results_hundred
+```
+
+#### The number of bootstrap samples affect the accuracy of the estimated distribution, this is because if we have a smaller amount of bootstrap samples, like 10, this could lead to higher variablility. By doing a lot of bootstrap samples it stablizes the accuarcy of the estimated distribution 
+
+
+
+#### 4. **Confidence Intervals:**
+####   Calculate a 95% confidence interval for the population mean age level using the bootstrap distribution obtained in the previous step.
+```{r}
+#CI for the population mean age level using the bootstrap dist. from previous step
+quantile(results, c(0.025,0.975))
+```
+
+
+* How does the width of a confidence interval change with different sample sizes?
+
+#### As the sample size increases the width of a confidence interval with decrease, this is because as there is a larger sample size provides a more accurate estimate of the population parameter, leading to a more precise confidence interval that is closer to the true population value.
+
+#### 5. **Standard Error of the Mean (SEM):**
+####   Calculate the standard error of the mean (SEM) of your estimate.
+```{r}
+sem <- sd(sample_data$age) / sqrt(length(sample_data$age))
+sem
+```
+
+* How is the standard error of the mean (SEM) different from the standard deviation?
+
+#### The standard error of the mean uses the standard deviation in its calculation to find the desired value. The SEM is the standard deviation divided by the square root of the number of samples, so the SEM is different from the standard deviation by being divided by the square root of the number of samples. The SD describes the spead of the data in a single sample while the SEM is describing how accurately the sample mean represents the population mean.
+
+* Why is SEM a useful measure in hypothesis testing?
+
+#### SEM is a useful measure in hypothesis testing because it quantifies the variablity of sample means around the population mean. Allowing to know in a hypothesis test if one extreme sample was taken once, due to random sampling variablity, or by taking multiple samples what the acutal population parameter would look like.
+
+## 2. 
+
+### Markov Chain: physical exercise training method A is used only 5% of the time, a person using method A will stay with this method 85% of the time, and a person not using method A will switch to method A about 65% time. At the beginning of the experiment only 5% of people used method A.
+
+#### 1. Generate a transition matrix for this Markov chain
+```{r}
+transition_m <- matrix(c(0.85, 0.15, 0.35, 0.65), nrow = 2, byrow = TRUE)
+
+transition_m
+```
+
+#### 2. Generate a transition plot (using R or by hand as an image it’s valid)
+```{r}
+library(diagram)
+labels <- c("Method A", "Not Method A")
+
+plotmat(transition_m, pos = c(1,1), lwd = 2, arr.pos = .6, 
+        box.type = "rect", box.size = .05, box.cex = .55, cex.txt = 0.8, main = "Transition Diagram",
+        name = labels)
+
+```
+
+#### I tried really hard to adjust the transition plot so it was more readable and this was the best I could achieve
+
+#### 3. Plot the change in the probabilities over time for both methods until the 10th time unit.
+```{r}
+#intial state
+p0 <- c(.05, .95)
+
+time_step <- 10
+
+probabilities <- matrix(NA, nrow = time_step, ncol = 2)
+#set initial probs
+probabilities[1, ] <- p0 
+
+for (t in 2:time_step) {
+  probabilities[t, ]<- probabilities[t-1, ] %*% transition_m
+}
+
+time <- 1:time_step
+```
+
+
+```{r}
+#high light these 3 all together
+#this code only works if all are run together
+plot(time, probabilities[,1], type = 'l', col = 'blue', lwd = 2, 
+     ylim= c(0,1), xlab= "Time", ylab = "Probabilities",
+     main = "Probabilities of Method A and Not A over Time")
+lines(time, probabilities[,2], col = "red", lwd = 2)
+legend("topright", legend = c("Method A", "Not Method A"), 
+       col = c("blue", "red"), lwd = 2)
+```
+
+* What are the key properties of a transition matrix in a Markov chain?
+
+#### The key properties of a transition matrix is that it is only dependent on the current state, each value represents the probability of moving from one state to another, with the probabilites being non-zero, and the rows summing to 1.
+* What does it mean for a Markov chain to reach a steady-state distribution? When is this achieved in this analysis?
+
+#### a markov chain reaching a steady-state distribution means that the probability remains constant overtime. In this analysis the steady state distibution appears to happen at about the 6th time unit, the probabilites level off at about this point.
+
+## 3. 
+
+### Random Walk: Another simpler example of a random walk is a one-dimensional random walk. first we place a marker at zero (our initial state), we flip a coin, if it lands on heads, the marker is moved one unit to the right (1), if it lands on tails it is moved one unit to the left.
+
+#### 1. Generate a function that randomly draws from our initial state and populates a vector with the different transitions.
+```{r}
+random_walk <- function(steps) {
+  #initialize the position
+  position <- numeric(steps + 1)
+  
+  #simulate random walk
+  for (i in 2:(steps + 1)) {
+    move <- sample(c(-1,1), size = 1 ) #replicating the coin flip, heads = 1 and tails = -1
+    position[i] <- position[i - 1] + move
+  }
+  return(position)
+}
+
+#example
+set.seed(51)
+walk <- random_walk(50)
+
+#plot
+plot(walk, type = "l", col = "black", main = "Random Walk", xlab = "Step", ylab = "Position")
+```
+
+#### 2. Generate a plot that shows 500 independent one-dimensional walks, differentiating walks that end above 0 or below 0.
+```{r}
+#generate the plot that shows 500 independent walks
+generate_walks <- function(n_walks, steps) {
+  set.seed(51)
+  
+  walks <- replicate(n_walks, random_walk(steps))
+  
+  #use color to show final position 
+  final_positions <- walks[nrow(walks), ]
+  colors <- ifelse(final_positions > 0, "blue", ifelse(final_positions < 0, "red", "black"))
+  
+  #plot all walks
+  plot(NA, xlim = c(1, steps + 1), ylim = range(walks), type = "n", xlab = "Steps", ylab = "Position", main = "500 independent 1D Random Walks")
+  for (i in 1:n_walks) {
+    lines(walks[, i], col = colors[i], lwd = 0.5)
+  }
+  
+  #code added to answer part 3
+  
+  #calculate the frequency
+  positive_count <- sum(final_positions > 0)
+  zero_count <- sum(final_positions == 0)
+  negative_count <- sum(final_positions < 0)
+  
+  cat("Frequency of walks ending in:", "\n")
+  cat("Positive cumulative count:", positive_count, "\n")
+  cat("Zero cumulative count:", zero_count, "\n")
+  cat("Negative cumulative count:", negative_count, "\n")
+}
+
+#run plot
+generate_walks(500, 100)
+```
+
+
+#### 3. What is the frequency of walks that ended in a positive cumulative count, in zero, or negative?
+#### I added code to my function in part 2 to help me calculate this.
+#### For the set seed of 51, there are a positive cumulative count of 235, for zero there are 34, and a negative cumulative count of 231.
+
+* How does a random walk differ from a Markov process?
+
+#### Random walks are a type of Markov process. In the Markov chain I believe they do not care about what the past has been and it is only focused on the what the probability of the next step is, meaning it is only focused on the current state. For a random walk, similar to the markov chain, the probability is only focused on the next step and moving forward, however, typically with a random walk we track the path taken over time, keeping track of the previous steps to wathc movement and the path of the random walk. 
