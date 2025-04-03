@@ -1,0 +1,245 @@
+---
+title: "Problem Set 4 Due Date Wednesday April 2rd"
+output: 
+  html_document:
+    toc: true # table of content true
+    toc_depth: 2  # upto three depths of headings (specified by #, ## and ###)
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    df_print: paged
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Carter Hardy
+
+## Problem Set 4
+
+## April 2, 2025
+
+## BMI 6106
+
+## Professor Javier Hernandez
+
+#### We would like to include some instructions regarding submission of problem sets to be able to fairly, consistently and efficiently grade your assignments.
+
+#### 1. Please submit just one document this document can be an .R script or a format that allows evaluation of your code and data (Jupyter, python script, etc) with all the necessary text (answers, discussions, analysis) which can be added to the script as comments (remember that a comment starts with the # symbol in R)
+
+#### 2.Once you have solved a problem with the code and the result needs to be printed by just calling the variable created. For example, if you are calculating the mean of a distribution and save the result as variable a = mean(x) then the next line needs to be a call to a, either print(a) or just a, so that when we run the code to check on your work we can evaluate your responses correctly.
+
+#### 3.The final answer needs to be written down as a comment; just having the final number as an answer will result in point deductions as in most cases the question is not asking for a number but for a statistical analysis. Eg. The t-test had a p-value of 0.001 t = 4.6 n = 30 (this is the correct way to present the results from a t-test, you can also include the 95CI), which indicates that we reject the null hypothesis that the mean blood pressure in treatment 1 is the same as in the placebo group.
+
+#### 4.We will not accept screenshots of code or results.
+
+#### 5.If there are plots in the results, you don’t need to print the plots using a different document, just have the code and we will run it and see the plot that you created.
+
+#### 6.It is ok to work together and copy code from exercises, peers, class examples, etc, but it is not ok to copy identical workflows and answers from classmates. Copying another’s answers verbatim is considered plagiarism and will result in a zero for the assignment as well as other potential consequences according to Program and University guidelines. It is ok to use LLMs to help with the code, but not for the analysis, this should be your own.
+
+#### 7.The penalty for turning in a late assignment is 10% reduction in grade per day (see course syllabus). 
+
+### How long will a person live? The life expectancy dataset provided by WHO (World Health Organization) is an attempt to answer this question:
+
+#### Independent Variables (predictors)
+
+#### Adult.Mortality
+#### infant.deaths
+#### Alcohol
+#### percentage.expenditure
+#### Hepatitis.B
+#### Measles
+#### BMI
+#### under.five.deaths
+#### Polio
+#### Total.expenditure
+#### Diphtheria
+#### HIV.AIDS
+#### GDP
+#### Population
+#### Income.composition.of.resources
+#### Schooling
+
+### Outcome (dependent variable)
+
+#### Life.expectancy 
+
+## Problem Set 4 (100 points)
+
+#### We are going to use the life expectancy dataset to generate a linear model that predicts life expectancy using the 16 predictors from the dataset
+
+#### This data has been subsetted to include only continuous data.
+
+```{r load}
+#setwd("/Users/javier/Documents/Jupyter/BMI_6106_2023/HomeWorks/HW4")
+expectancy = read.csv("Life_Expectancy_Data.csv")
+```
+
+
+#### Because this data contains missing data we are going to impute the dataset by using the means of each column. Imputation is the process of replacing missing data with some value. There are many techniques for imputation, but we are going to simply add the median of the column to each missing data, that way we wouldn’t be creating a statistical bias by skewing the distribution. 
+
+```{r impute}
+#mean imputation
+for(i in 1:ncol(expectancy)) {
+  expectancy[ , i][is.na(expectancy[ , i])] <- median(expectancy[ , i], na.rm=TRUE)
+}
+```
+
+## Premise
+### Your job for this assignment is to use the statistical tools seen in class to evaluate and find the best model (best predictors and their combination) that best explains the outcome variable. The assignment will be divided into three sections:
+
+#### This exercise is open ended, no correct answer, so what are we looking for in the responses?:
+
+## 1. Data Exploration (Introduction - Methods) (30 points)
+### Do a short data exploration of this dataset. Describe the most problematic aspects of the data (deviations from normality, colliniearity, skewness, etc) that could potentially affect and bias the analysis.
+```{r}
+#Data Exploration
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(faraway)
+
+#explore summary statistics 
+summary(expectancy)
+
+#check NA
+colSums(is.na(expectancy))
+
+
+#check distribution of each variable - check for normailty and skewness
+#reshape data into long format
+df_long <- expectancy %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+
+#plot distributions
+ggplot(df_long, aes(x = Value)) +
+  geom_histogram(bins = 30, fill = "blue", alpha = 0.5) +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal()
+#these plots show that many of the variables don't have a normal distribution, we will need to do some transformations on them. Later on in this problem set I will do transformations, but I wanted to continue on with the raw data and see what I find with that first. Then I do transformations on the variables and continue to find the best model.
+
+
+
+#Use VIF to check for collinearity
+
+#check vif without the dependent variable (Life.expectancy)
+exp_wo_dep = expectancy[,-17]
+#check the columns we have to make sure we took out the correct variable, commenting it out for my final code
+#colnames(exp_wo_dep)
+
+#check for VIF above 10
+vif(exp_wo_dep)
+
+#this is a correlation plot that my knitr could not render
+#correlation_plot <-cor(expectancy)
+#corrplot(correlation_plot, type="upper", order="hclust", col=brewer.pal(n=8, name="RdYlBu"))
+```
+Based on our data exploration, I found the variables infant.deaths and under.five.deaths have a VIF > 10, meaning we will need to take them out. I also can see from the distribution that we will need to do some transformations on the data. Later on in this problem set I will do transformations, but I want to continue on with the raw data and see what I find with that first. Then I do transformations on the variables and continue to find the best model. 
+
+
+
+## 2. Model Generation and Evaluation (Results) (35 points)
+### Use the tools described in class to generate a linear model that best fits the data. Remember that there are different ways to evaluate and compare the models and you have to make the decisions based on the data you have. You should use the metrics, scores and diagnostic plots that help evaluate the models seen in class.
+```{r}
+#lm with all data
+colnames(expectancy)
+all = lm(Life.expectancy ~ .,data = expectancy)
+summary(all)
+#We can see that the normality and residual plot are not great from this model
+plot(all)
+
+
+#we need to take out some variables 
+#start by taking out the VIF values greater than 10 (take out infant.deaths, under.five.deaths)
+lm1 = lm(Life.expectancy ~ Adult.Mortality + Alcohol + Hepatitis.B + BMI + Polio + 
+         Diphtheria + GDP + Income.composition.of.resources + percentage.expenditure + 
+         Measles + Total.expenditure + HIV.AIDS + Population + Schooling, data = expectancy)
+#I am commenting out the summary and plot of this model to make my project more concise. If interest you can remove the # mark and run them.
+
+#summary(lm1)
+#There is some improvement but it is still not as good as we want it
+#plot(lm1)
+
+
+#taking out variables that had a higher p-value than .05 from summary(1m1) (they are the same as summary(all)), the variables with p-values higher than .05 is percantage.expenditure and Population
+lm2 = lm(Life.expectancy ~ Adult.Mortality + Alcohol + Hepatitis.B + BMI + Polio + 
+         Diphtheria + GDP + Income.composition.of.resources + 
+         Measles + Total.expenditure + HIV.AIDS + Schooling, data = expectancy)
+summary(lm2)
+#We have gotten more improvement but we are going to have to do variable transformations in order to get better results
+plot(lm2)
+```
+I first started will all the variables to see what the initial model looks like, then I took out the two variables that had a VIF > 10, then I took out the variables that were not signficant in the model.
+These model are not very good, in order to improve them we will need to do some transformations on different variables. We do those transformations here and then we continue to find the best model.
+
+```{r}
+#Transform variables that are skewed and retest these out. 
+exp_transform = expectancy
+
+#Taking out Infant.deaths and under.five.deaths becuase their VIF was above 10
+exp_transform <- exp_transform[, !names(exp_transform) %in% c("infant.deaths","under.five.deaths")]
+
+
+#Right skewed variables:
+
+#mild: Adult.Mortalit, Alcohol -> sqrt transformation 
+#extreme: GDP, HIV.AIDS, Measles, percentage.expenditure, Population -> log transformation
+
+exp_transform$Adult.Mortality = sqrt(exp_transform$Adult.Mortality)
+exp_transform$Alcohol = sqrt(exp_transform$Alcohol)
+exp_transform$GDP = log(exp_transform$GDP)
+exp_transform$HIV.AIDS <- log(exp_transform$HIV.AIDS)
+exp_transform$Measles <- log(exp_transform$Measles)
+exp_transform$percentage.expenditure <- log(exp_transform$percentage.expenditure)
+exp_transform$Population <- log(exp_transform$Population)
+#remove NA values
+exp_transform$percentage.expenditure[is.infinite(exp_transform$percentage.expenditure)] <- NA
+exp_transform$Measles[is.infinite(exp_transform$Measles)] <- NA
+exp_transform <- na.omit(exp_transform)
+
+
+#Left skewed variables:
+#Income.composition.of.resources, Diphtheria, Polio -> x^2 or x^3 transformation
+exp_transform$Income.composition.of.resources <- exp_transform$Income.composition.of.resources^2
+exp_transform$Diphtheria <- exp_transform$Diphtheria^3
+exp_transform$Polio <- exp_transform$Polio^3
+
+#check distribution of each transformered variable - check for normailty and skewness
+#reshape data into long format
+df_long <- exp_transform %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Value")
+
+#plot distributions
+ggplot(df_long, aes(x = Value)) +
+  geom_histogram(bins = 30, fill = "blue", alpha = 0.5) +
+  facet_wrap(~ Variable, scales = "free") +
+  theme_minimal()
+
+lm_transform <- lm(Life.expectancy ~ ., data = exp_transform) 
+vif(lm_transform)
+#Based on our new transformations, we can see that percentage.expenditure and GDP have a VIF of over 10, so we will not use both of these variavles 
+
+summary(lm_transform)
+#Based on the new transformations, we find that the variables Measles, Total.expenditure, GDP, and Population are not significant. We will take these out of our next model.
+
+lm3 = lm(Life.expectancy ~ Adult.Mortality + Alcohol + Hepatitis.B + BMI + Polio + Diphtheria + Income.composition.of.resources + percentage.expenditure + Schooling, data = exp_transform)
+
+summary(lm3)
+plot(lm3)
+#This is the best we have seen the residual and normality plot. The residuals are decently good showing no pattern in the plot. The normality plot is decent, based on the tails there are probably outliers that are having an effect on the normality.
+
+res = resid(lm3)
+#Create density plot of residuals
+plot(density(res))
+```
+This is the best we have seen the residual and normality plot. The residuals are decently good showing no pattern in the plot. The normality plot is decent, based on the tails there are probably outliers that are having an effect on the normality.
+We removed transformed variables that had a VIF > 10 and then were not signficant in the model.
+
+## 3. Analysis and Discussion (Conclusions) (35 points)
+### Generate a short report (a paragraph or two) about the main conclusions of your analysis, including the effect of the selected independent variables on life expectancy and under what criteria you chose those variables, and what is the interpretaion of the model you selected. Also, what kind of predictions and their utility you can make from your results.
+
+### With an R-squared value of .82, our main conclusion is that 82% of the variation in the Life.expectancy variable is explained by our model. Our final model we used was the square root of Adult.Mortality, square root of Alcohol, Hepatitis.B, BMI, Polio cubed, Diphtheria cubed, Income.composition.of.resources squared, log of percentage.expenditure and Schooling. We chose these variables based on having VIF scores lower than 10 and having a significant p-value (less than .05) in our model, showing they were significant to our model. The interpretation of the model we selected is that these variables, for example the square root of alcohol consumption, BMI, and Schooling (along with the other variables selected in our model) have a significant impact on life expectancy. The residual plot showed almost no pattern, with a little slimming at the end of the data. The normality plot we had showed decent normality except on the edges, which may signify some outliers.One of the main lessons I learned from my analysis is the importance of transformations. Doing the transformations on the variables improved our model greatly. 
+
+### With these results, we can make predictions of life expectancy based on the variables in our model. This has a great utility because we can see the direct impact a change could have, like less alcohol consumption or a lower BMI, on life expectancy. Seeing the direct impact of these small changes could increase motivation for individuals to take these changes seriously in order to improve their life.
+
