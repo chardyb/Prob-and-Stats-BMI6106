@@ -1,0 +1,403 @@
+---
+title: "Clustering Homework - Due April 9th"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Carter Hardy
+
+The Breast Cancer dataset, also known as the Wisconsin Diagnostic Breast Cancer (WDBC) dataset, contains measurements from digitized images of fine needle aspirate (FNA) biopsies of breast masses. Each sample is described by 30 numeric features representing the characteristics of the cell nuclei, such as radius, texture, perimeter, area, and smoothness. The dataset includes 569 samples, each labeled as either malignant (M) or benign (B).
+
+Your job today is use the learned clustering methods in class to best describe this dataset. The Ultimate goal is to understand the classificatory power of this dataset, which variables are the most important at separating the two classes and to statistically compare multiple clustering methods.
+
+## 1. Load Data 
+
+```{r}
+data <- read.csv("Breast_Cancer.csv")
+head(data)
+
+# Load libraries
+library(ggplot2)
+library(factoextra)
+library(tidyverse)
+library(ggplot2)
+library(caret)
+```
+
+## 2. PCA (10)
+
+- Scree plot
+- Biplot
+- Variance explained - which variables contribute the most on PC1,2?
+- Confusion matrix
+```{r}
+#run PCA
+pca <- prcomp(data[,2:31], scale. = TRUE)
+
+#Scree plot
+fviz_eig(pca, addlabels = TRUE, ylim = c(0, 100)) +
+  ggtitle("Scree Plot - Variance Explained by Each PC")
+#The elbow is around the 3 PC
+
+#Biplot
+fviz_pca_biplot(pca,
+                label = "var",   # show variable vectors
+                habillage = data$diagnosis, # color by diagnosis
+                addEllipses = TRUE,
+                col.var = "black") +
+  ggtitle("PCA Biplot with diagnosis")
+
+#Variance explained (How much each variable contributes to each PC)
+loadings <- as.data.frame(pca$rotation)
+print(loadings)
+##Variable Contributions to Each PC (%)
+# Contributions (percent)
+contrib <- get_pca_var(pca)$contrib
+round(contrib, 2)
+
+#Confusion matrix
+# We'll use the first 3 principal components for clustering
+pca_data <- as.data.frame(pca$x[, 1:3])
+#Run K-means on the PCA-transformed data
+set.seed(49)
+kmeans_result <- kmeans(pca_data, centers = 2,nstart = 25)
+
+pca_data$Cluster <- as.factor(kmeans_result$cluster)
+pca_data$diagnosis <- data$diagnosis
+
+###plot PCA with cluster assignments
+ggplot(pca_data, aes(PC1, PC2, color = Cluster, shape = diagnosis)) +
+  geom_point(size = 3) +
+  labs(title = "PCA + K-means Clustering on diagnosis Data")
+
+
+##Confusion matrix (compare clusters with actual species)
+table(Cluster = kmeans_result$cluster, diagnosis = data$diagnosis)
+
+cluster_labels <- ifelse(kmeans_result$cluster == 1, "M", "B")
+
+# Now create factors with the same levels
+predicted <- factor(cluster_labels, levels = c("B", "M"))
+actual <- factor(data$diagnosis, levels = c("B", "M"))
+
+con_pca = confusionMatrix(predicted, actual)
+con_pca
+#accuracy .9104
+```
+Our PCA confusion matrix shows that we have an accuracy of 91%.
+
+## 3. t-SNE (10)
+
+- Try different perplexities
+- Visualize colored by true labels
+- confusion matrix
+```{r}
+library(Rtsne)
+#remove duplicate rows
+data_unique <- data[!duplicated(data[,2:31]), ]
+
+#perplexity 30
+# Run t-SNE
+tsne_result <- Rtsne(data_unique[,2:31], perplexity = 30)
+tsne_data <- as.data.frame(tsne_result$Y)
+
+set.seed(49)  # for reproducibility
+kmeans_result <- kmeans(tsne_data, centers = 2)
+
+# Actual labels
+true_labels <- data_unique$diagnosis
+
+# Predicted clusters
+cluster_labels <- ifelse(kmeans_result$cluster == 1, "M", "B")
+
+# Now create factors with the same levels
+predicted_tsne <- factor(cluster_labels, levels = c("B", "M"))
+actual_tsne <- factor(true_labels, levels = c("B", "M"))
+
+
+# Create a confusion matrix
+table(Cluster = cluster_labels, diagnosis = true_labels)
+
+con_tsne = confusionMatrix(predicted_tsne, actual_tsne) 
+con_tsne
+#accuracy .819
+```
+
+
+With the perplexity of 30, our t-SNE confusion matrix shows we have an accuracy of 82%
+
+
+```{r}
+#perplexity 15
+# Run t-SNE
+tsne_result2 <- Rtsne(data_unique[,2:31], perplexity = 15)
+tsne_data2 <- as.data.frame(tsne_result2$Y)
+
+set.seed(49)  # for reproducibility
+kmeans_result2 <- kmeans(tsne_data2, centers = 2)
+
+# Actual labels
+true_labels <- data_unique$diagnosis
+
+# Predicted clusters
+cluster_labels2 <- ifelse(kmeans_result2$cluster == 1, "M", "B")
+
+# Now create factors with the same levels
+predicted_tsne2 <- factor(cluster_labels2, levels = c("B", "M"))
+actual_tsne2 <- factor(true_labels, levels = c("B", "M"))
+
+
+# Create a confusion matrix
+table(Cluster = cluster_labels2, diagnosis = true_labels)
+
+con_tsne2 = confusionMatrix(predicted_tsne2, actual_tsne2) 
+con_tsne2
+#accuracy .61
+```
+With the perplexity of 15, our t-SNE confusion matrix shows we have an accuracy of 62%, this is worse than our accuracy with a perplexity of 30.
+
+
+## 4. K-means Clustering (10)
+
+- Elbow method
+- Silhouette score
+- Compare to true labels - confusion matrix
+```{r}
+library(cluster)
+library(factoextra)
+library(purrr)
+library(caret)
+#Elbow method
+###How many Ks?
+data_wo <- scale(data[, -1])
+
+#Elbow method
+wss <- function(k) {
+  kmeans(data_wo, k, nstart = 10)$tot.withinss
+}
+
+k.values <- 1:15
+wss_values <- map_dbl(k.values, wss)
+
+plot(k.values, wss_values,
+     type = "b", pch = 19, frame = FALSE,
+     xlab = "Number of clusters K",
+     ylab = "Total within-cluster sum of squares",
+     main = "Elbow Method for Optimal K")
+
+#K-means with k = 2
+set.seed(123)
+kmeans_result_elbow <- kmeans(data_wo, centers = 2, nstart = 25)
+clusters_elbow <- kmeans_result_elbow$cluster
+
+#Silhouette score
+dist_matrix <- dist(data_wo, method = "euclidean")
+sil <- silhouette(clusters_elbow, dist_matrix)
+fviz_silhouette(sil)
+
+# Step 5: Confusion matrix (comparing clusters to actual diagnosis)
+# Convert clusters to "M"/"B" labels — you may need to flip them
+cluster_labels_elbow <- ifelse(clusters_elbow == 1, "M", "B")
+
+# Match factors
+predicted_elbow <- factor(cluster_labels_elbow, levels = c("B", "M"))
+actual_elbow <- factor(data$diagnosis, levels = c("B", "M"))
+
+con_kmean = confusionMatrix(predicted_elbow, actual_elbow)
+con_kmean
+#accuracy .9104
+```
+Our Kmeans confusion matrix shows that we have an accuracy of 91%.
+
+## 5. Hierarchical Clustering (10)
+
+- Try different linkage methods
+- Plot dendrograms
+- Evaluate - confusion matrix
+```{r}
+#I had to test it on a small sample because at first I could not get it to load.
+
+#set.seed(49)
+#sample_idx <- sample(1:nrow(data_wo), 500)
+#data_small <- data_wo[sample_idx, ]
+#data_scale <- scale(data_small)
+#dist_data <- dist(data_scale, method = "euclidean")
+#library(factoextra)
+#hc <- hclust(dist_data, method = "ward.D2")
+#fviz_dend(hc, k = 3, rect = TRUE, main = "Ward.D2 Dendrogram", cex = 0.6)
+
+
+data_scale = scale(data_wo)
+dist_data <- dist(data_scale, method = "euclidean")
+
+##different linkage methods
+library(gridExtra)
+#Try several linkage methods
+methods <- c("average", "single", "complete", "ward.D2")
+
+#Plot dendrograms
+plots <- list()
+for (m in methods) {
+  hc <- hclust(dist_data, method = m)
+  plots[[m]] <- fviz_dend(hc, k = 3, rect = TRUE, main = paste("Dendrogram -", m), cex = 0.6)
+}
+
+# Show 2x2 grid
+grid.arrange(grobs = plots, ncol = 2)
+
+##Use one of the clustering methods to cut the tree
+hc_ward <- hclust(dist_data, method = "ward.D2")
+cluster_labels_hier <- cutree(hc_ward, k = 2)
+
+table(cluster_labels_hier, data$diagnosis) 
+
+
+predicted_hier <- factor(ifelse(cluster_labels_hier == 1, "M", "B"), levels = c("B", "M"))
+actual_hier <- factor(data$diagnosis, levels = c("B", "M"))
+
+#confusion matrix
+con_hier = confusionMatrix(predicted_hier, actual_hier)
+con_hier
+#accuracy .8805
+```
+Our Hierarchical Clustering confusion matrix shows that we have an accuracy of 88%.
+
+
+## 6. Combination of Methods (10)
+
+- Does combining methods work better?
+Based on the accuracy of the confusion matrix below, by combining t-SNE and hierarchical clustering, this did not work better than Kmeans or PCA. Sometime combining methods may work better, but in this case the combination of PCA and Kmeans worked better than t-SNE and hierarchical clustering.
+
+- Evaluate - confusion matrix
+
+```{r}
+#Combining methods, T-sne and hierarchical 
+library(Rtsne)
+#remove duplicate rows
+data_unique <- data[!duplicated(data[,2:31]), ]
+diagnosis_unique <- data_unique$diagnosis
+
+#Run t-SNE
+tsne_result <- Rtsne(data_unique[,2:31], perplexity = 30)
+tsne_data <- as.data.frame(tsne_result$Y)
+
+#start hierarchical  clustering
+dist_data_combined <- dist(tsne_data, method = "euclidean")
+hc_ward_comb <- hclust(dist_data_combined, method = "ward.D2")
+cluster_labels_comb <- cutree(hc_ward_comb, k = 2)
+
+#check table
+table(cluster_labels_comb, diagnosis_unique) 
+
+#create confusion matrix
+predicted_comb <- factor(ifelse(cluster_labels_comb == 1, "M", "B"), levels = c("B", "M"))
+actual_comb <- factor(diagnosis_unique, levels = c("B", "M"))
+
+#confusion matrix
+con_combine = confusionMatrix(predicted_comb, actual_comb)
+con_combine
+#accuracy .819
+```
+By combing methods we achieved an accuracy of 82%, shown by our confusion matrix.
+
+## 7. Evaluation (20)
+
+- Confusion matrices comparison and analysis (why are these different?)
+```{r}
+#Compare confusion matrices 
+con_pca
+#accuracy .9104
+
+con_tsne #with 30 perplexity 
+#accuracy .819
+
+con_tsne2 #with 15 perplexity
+#accuracy .61
+
+con_kmean
+#accuracy .9104
+
+con_hier
+#accuracy .8805
+
+con_combine
+#accuracy .819
+```
+Each confusion matrix has a different method that is giving its predictions and then comparing the actual results from the data. From these confusion matrices we can compare and analyze the difference in the accuracy, the successful predictions, failed predictions, and more from the different methods.
+We can see that PCA and Kmeans gave us our highest accuracy, and combining t-SNE and hierarchical clustering, and t-SNE both with 30 and 15 perplexities gave us our lowest accuracy. t-SNE with 15 perplexity gave us the lowest accuracy with 62%.
+
+
+```{r}
+library(clusterCrit)
+library(cluster)
+
+# Pre-allocate dataframe for storing metrics
+metrics_df <- data.frame(
+  Method = character(),
+  Dunn = numeric(),
+  DB = numeric(),
+  Avg_Silhouette = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Loop through clustering methods
+for (m in methods) {
+  # Perform hierarchical clustering using the chosen method
+  hc <- hclust(dist_data, method = m)
+  
+  # Cut the tree to create clusters
+  labels <- cutree(hc, k = 3)
+  
+  # Calculate silhouette score
+  sil <- silhouette(labels, dist_data)
+  
+  # Calculate Dunn and Davies-Bouldin indices
+  crit_vals <- intCriteria(as.matrix(data_scale), labels, c("Dunn", "Davies_Bouldin"))
+  
+  # Append metrics for this method to the dataframe
+  metrics_df <- rbind(metrics_df, data.frame(
+    Method = m,
+    Dunn = round(crit_vals$dunn, 3),
+    DB = round(crit_vals$davies_bouldin, 3),
+    Avg_Silhouette = round(mean(sil[, 3]), 3)
+  ))
+}
+
+# Print the metrics for all methods
+print(metrics_df)
+
+# High Dunn, low DB, and high silhouette = best clustering method.
+
+```
+- Dunn index (why are these different?) 
+**Answer:** higher Dunn index tells us that the data is well seperated and better clustering, these scores for the 4 different methods are relatively low scores, with single method being the best but only being .5.
+- Davies-Bouldin index (why are these different?)
+**Answer:** a lower index is better for the Davies-Bouldin index, sinfle has the lowest index score with .38 while the others are higher.
+From these scores we can take away that these clusters are not great.
+
+## 8. Conclusion (20)
+- Overall conclusion of your analysis one paragraph 200 words +/- 10 words
+
+Using PCA, t-SNE, Kmeans, hierarchical clustering, and then combining t_SNE and hierarchical, we could find varying levels of accuracy of the predicted outcome of breast cancer, benign or malignant, against the actual outcome of breast cancer. Some of the methods worked slightly better than the others, but our lowest accuracy was 62% from t-SNE with 15 perplexities, which is still considered okay. In contrast, our higher accuracy methods, like PCA and Kmeans, have an accuracy of 91%. The other techniques fall within 82%-89%. Overall, these methods were all able to predict the correct type of breast cancer over half of the time, with most showing good accuracy. This analysis was an effective way of clustering different types of breast cancer. I found PCA to be my preferred method for this analysis. With my statistical background, I am familiar with the elbow plot and choosing k or the number of PCs based on the elbow graph. Deciding where the cut-off is can be intimidating, but with continued practice, selecting the elbow cut-off becomes another skill. I found hierarchical clustering the most intimidating and challenging in this assignment because my computer struggled to process the dendrograms; once I swept my environment, it could handle it.
+
+## 9. Additional Questions (10 - 5 each)
+
+- How many principal components are required to explain 80% of the variance?
+**Answer:** For our PCA, if we add the first 3 PCs, it would explain 79% of the variance. So to answer the question, 4 PCs would get us above 80%, but 3 PCs is really close to 80% of the variance.
+
+- True or False: t-SNE preserves global distances between samples.
+**Answer:** False
+
+- Why do we scale the variables in this dataset?
+**Answer:** We scale the variables in this dataset in order to calculate distance, like the euclydian distance, for methods that rely on distance calculations, which calculations like kmeans and silhouette rely on. Scaling ensures that each feature is contributes equally to distance based calculations.
+
+- Which metric favors high separation and low intra-cluster spread?.
+
+  A.  Dunn Index
+  B.  DB index
+  C.  Silhouette
+  D.  Euclidean Distance
+**Answer:** A. Dunn Index
+```
